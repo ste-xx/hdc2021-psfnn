@@ -90,14 +90,14 @@ input[type=checkbox] { accent-color: var(--accent); width: 16px; height: 16px; }
 </head>
 <body>
 
-<h1>🔍 HDC2021 Image Deblurring</h1>
+<h1><span aria-hidden="true">🔍 </span>HDC2021 Image Deblurring</h1>
 <p class="subtitle">Browser-based image dewarping &amp; deblurring — no server required</p>
 
 <!-- Upload -->
 <div class="card">
   <div class="drop-zone" id="dropZone">
     <input type="file" id="fileInput" accept="image/png,image/jpeg,image/tiff,image/bmp,image/gif">
-    <div class="icon">📂</div>
+    <div class="icon" aria-hidden="true">📂</div>
     <p>Drag &amp; drop an image here or click to browse</p>
     <p style="font-size:0.75rem">PNG, JPG, TIFF, BMP, GIF</p>
   </div>
@@ -263,6 +263,11 @@ function handleFile(file) {
   const img = new Image();
   img.onload = () => {
     const w = img.naturalWidth, h = img.naturalHeight;
+    if (w < 2 || h < 2) {
+      errorMsg.textContent = 'Image must be at least 2×2 pixels.';
+      URL.revokeObjectURL(url);
+      return;
+    }
     // Draw to offscreen canvas to get pixel data
     const c = document.createElement('canvas');
     c.width = w; c.height = h;
@@ -272,7 +277,7 @@ function handleFile(file) {
     // Convert to grayscale Float64Array [0,1]
     const gray = new Float64Array(w * h);
     for (let i = 0; i < w * h; i++) {
-      gray[i] = (rgba[i*4] + rgba[i*4+1] + rgba[i*4+2]) / (3 * 255);
+      gray[i] = (rgba[i * 4] + rgba[i * 4 + 1] + rgba[i * 4 + 2]) / 765; // 3 * 255
     }
     loadedImage = { data: gray, width: w, height: h };
     imgInfo.textContent = `${file.name} — ${w}×${h} pixels`;
@@ -443,7 +448,7 @@ function nextPow2(n) {
 
 function fft1d(re, im, n, inverse) {
   // Bit-reversal permutation
-  const bits = Math.round(Math.log2(n));
+  const bits = 31 - Math.clz32(n); // exact log2 for powers of 2
   for (let i = 0; i < n; i++) {
     let j = 0;
     for (let b = 0; b < bits; b++) j |= ((i >> b) & 1) << (bits - 1 - b);
