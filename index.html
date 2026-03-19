@@ -277,7 +277,7 @@ function handleFile(file) {
     // Convert to grayscale Float64Array [0,1]
     const gray = new Float64Array(w * h);
     for (let i = 0; i < w * h; i++) {
-      gray[i] = (rgba[i * 4] + rgba[i * 4 + 1] + rgba[i * 4 + 2]) / 765; // 3 * 255
+      gray[i] = (rgba[i * 4] + rgba[i * 4 + 1] + rgba[i * 4 + 2]) / 765; // avg RGB normalized to [0,1]: sum / (3 * 255)
     }
     loadedImage = { data: gray, width: w, height: h };
     imgInfo.textContent = `${file.name} — ${w}×${h} pixels`;
@@ -414,7 +414,7 @@ async function dewarpImage(data, w, h, step) {
   return out;
 }
 
-// Bicubic interpolation with Keys kernel (a = -0.75)
+// Bicubic interpolation with Keys kernel (a = -0.75, matches PyTorch grid_sample default)
 function cubicWeight(t) {
   const at = Math.abs(t);
   const a = -0.75;
@@ -549,7 +549,7 @@ async function wienerDeconvolve(data, w, h, step) {
   const cx = (psfSize - 1) / 2, cy = (psfSize - 1) / 2;
   for (let y = 0; y < psfSize; y++) {
     for (let x = 0; x < psfSize; x++) {
-      const ny = ((y - cy) % pH + pH) % pH;
+      const ny = ((y - cy) % pH + pH) % pH; // circular shift to center PSF at origin for FFT
       const nx = ((x - cx) % pW + pW) % pW;
       hRe[ny * pW + nx] = psf[y * psfSize + x];
     }
